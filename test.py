@@ -1,0 +1,106 @@
+# Copyright 2022 DeepMind Technologies Limited
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+"""Example of using python simulate UI for a double pendulum"""
+
+import mujoco
+import mujoco.viewer as viewer
+import numpy as np
+import time
+from scipy.linalg import solve_continuous_are
+
+# Find a K matrix for a linearized double pendulum using LQR
+def double_pendulum_lqr_K():
+    # System linearization calculated using "derivative" sample
+    A = np.array([[0, 0, 1, 0],
+      [0, 0, 0, 1],
+      [ 2.494531E+01, -1.565526E+01, -2.130544E-01,  5.164733E-01],
+      [-3.252928E+01,  6.589209E+01,  5.164733E-01, -1.793546E+00],
+      ])
+    B = np.array([[0], [0], [2.130544E+00], [-5.164733E+00]])
+
+    Q = 1 * np.array([[10,  0,  0,   0],
+      [0, 100,  0,   0],
+      [0,   0, 10,   0],
+      [0,   0,  0, 100]])
+    R = 1 * np.eye(1)
+
+    S = solve_continuous_are(A, B, Q, R)
+
+    K = np.linalg.inv(R)@(B.T @ S)
+    return K
+
+def double_pendulum_control(m, d, K):
+    x = np.concatenate((
+        d.joint('shoulder').qpos,
+        d.joint('elbow').qpos,
+        d.joint('shoulder').qvel,
+        d.joint('elbow').qvel))
+
+    u = -K @ x
+    d.actuator('shoulder').ctrl[0] = u
+
+def load_callback(m=None, d=None):
+    # Clear the control callback before loading a new model
+  # or a Python exception is raised
+    mujoco.set_mjcb_control(None)
+
+    m = mujoco.MjModel.from_xml_path('./double_pendulum.xml')
+    d = mujoco.MjData(m)
+
+    if m is not None:
+      # Set some initial conditions
+        d.joint('shoulder').qpos = 0.1
+        d.joint('elbow').qpos = 0.1
+        # Set the control callback
+        K = double_pendulum_lqr_K()
+        mujoco.set_mjcb_control(lambda m, d: double_pendulum_control(m, d, K))
+
+    return m, d
+
+def Passive_viewer():
+    model = mujoco.MjModel.from_xml_path('./double_pendulum.xml')
+    data = mujoco.MjData(model)
+
+    mujoco.set_mjcb_control(None)
+    mujoco.mj_resetData(model, data)
+    data.joint('shoulder').qpos = 0.1
+    data.joint('elbow').qpos  = 0.1
+    
+    K = double_pendulum_lqr_K()
+    mujoco.set_mjcb_control(lambda m, d: double_pendulum_control(model, data, K))
+
+    start = time.time()
+    with viewer.launch_passive(model, data) as viewers:
+        with viewers.lock():
+            viewers.opt.flags[mujoco.mjtVisFlag.mjVIS_CONTACTPOINT] = True
+            viewers.opt.flags[mujoco.mjtVisFlag.mjVIS_CONTACTFORCE] = True
+            viewers.opt.flags[mujoco.mjtVisFlag.mjVIS_TRANSPARENT] = True
+            viewers.opt.flags[mujoco.mjtVisFlag.mjVIS_JOINT] = True
+
+        while viewers.is_running():
+
+            step_start = time.time()
+            mujoco.mj_step(model, data)
+            viewers.sync()
+
+            # Rudimentary time keeping, will drift relative to wall clock.
+            time_until_next_step=model.opt.timestep - (time.time() - step_start)
+
+            if time_until_next_step > 0:
+                time.sleep(time_until_next_step)
+
+if __name__ == '__main__':
+    # viewer.launch(loader=load_callback)
+    Passive_viewer()
