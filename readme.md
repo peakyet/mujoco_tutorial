@@ -1,5 +1,31 @@
-[toc]
 # A Tutorial for Mujoco For Me
+
+<!--toc:start-->
+- [A Tutorial for Mujoco For Me](#a-tutorial-for-mujoco-for-me)
+  - [Install](#install)
+  - [How to Study](#how-to-study)
+  - [The Summary of Mujoco Python tutorial](#the-summary-of-mujoco-python-tutorial)
+    - [Creating a Model Instance](#creating-a-model-instance)
+      - [mjModel](#mjmodel)
+      - [Named access](#named-access)
+    - [mjData](#mjdata)
+      - [qpos](#qpos)
+    - [Rendering](#rendering)
+    - [Error handling](#error-handling)
+    - [CallBacks](#callbacks)
+    - [Simulation](#simulation)
+    - [Functions](#functions)
+    - [Enums and constants](#enums-and-constants)
+    - [Noise](#noise)
+  - [A Summary of *dm_control*](#a-summary-of-dmcontrol)
+    - [Rendering](#rendering)
+  - [Example](#example)
+    - [tippe-top](#tippe-top)
+    - [chaotic pendulum](#chaotic-pendulum)
+    - [Contract](#contract)
+    - [Friction](#friction)
+    - [Tendons, actuators and sensors](#tendons-actuators-and-sensors)
+<!--toc:end-->
 
 ## Install
 
@@ -89,6 +115,12 @@ To propagate the values in `mjData` for dynamic, we need
 ```py
 mujoco.mj_forward(model, data)
 ```
+
+Next we introduce the common members of mjData.
+
+#### qpos
+
+It is the generalized position. ([pos, quat] for freejoint)
 
 ### Rendering
 
@@ -232,6 +264,10 @@ MuJoCo functions are exposed as Python functions of the same name. In Python, th
 ### Enums and constants
 
 MuJoCo enums are available as `mujoco.mjtEnumType.ENUM_VALUE`, for example `mujoco.mjtObj.mjOBJ_SITE`. MuJoCo constants are available with the same name directly under the mujoco module, for example `mujoco.mjVISSTRING`.
+
+### Noise
+
+MuJoCo simulations are deterministic with one exception: sensor noise can be generated when this feature is enabled. This is done by calling the C function rand() internally. To generate the same random number sequence, call srand() with a desired seed after the model is loaded and before the simulation starts. The model compiler calls srand(123) internally, so as to generate random dots for procedural textures. Therefore the noise sequence in the sensor data will change if the specification of procedural textures changes, and the user does not call srand() after model compilation.
 
 ## A Summary of *dm_control*
 

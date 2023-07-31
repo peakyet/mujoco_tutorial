@@ -167,9 +167,9 @@ def Passive_viewer(model,data):
         model.vis.map.force = 0.3
 
         # set initial state
-        # mujoco.mj_resetDataKeyframe(model, data, 0)
-        mujoco.mj_resetData(model, data)
-        data.qvel[3:6] = 5 * np.random.randn(3)
+        mujoco.mj_resetDataKeyframe(model, data, 0)
+        # mujoco.mj_resetData(model, data)
+        # data.qvel[3:6] = 5 * np.random.randn(3)
         mujoco.mj_step(model, data)
 
         # start = time.time()
@@ -179,7 +179,7 @@ def Passive_viewer(model,data):
 
             # mj_step can be replaced with code that also evaluates
             # a policy and applies a control signal before stepping the physics.
-            # mujoco.mj_step(model, data)
+            mujoco.mj_step(model, data)
 
             print(f"time: {data.time}\t qpos = {data.qpos}\n qvel:{data.qvel}")
             # sim_time[step] = data.time
@@ -216,7 +216,7 @@ def Passive_viewer(model,data):
 
 
 if __name__ == "__main__":
-    model = mujoco.MjModel.from_xml_string(Tendons_)
+    model = mujoco.MjModel.from_xml_string(chaotic_pendulum )
     data = mujoco.MjData(model)
 
     print(f"time step: {model.opt.timestep}")

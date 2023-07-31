@@ -56,7 +56,7 @@ ax[0].plot(timevals, angular_velocity)
 ax[0].set_title('angular velocity')
 ax[0].set_ylabel('radians / second')
 
-ax[1].plot(timevals, stem_height)
+ax[1].plot(timevals, tem_height)
 ax[1].set_xlabel('time (seconds)')
 ax[1].set_ylabel('meters')
 _ = ax[1].set_title('stem height')
